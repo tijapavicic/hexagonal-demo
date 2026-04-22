@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventi
 
 ---
 
+## [1.4.0] — 2026-04-22
+
+> **Persistence layer restored & error handling hardened** — out adapter created, dead-code removed, boundary violations sealed.
+
+### ✅ Added
+
+| Item | Details |
+|------|---------|
+| `IllegalArgumentException` handler | `RestExceptionHandler.handleIllegalArgument` — invalid `page`/`size` from `UserQuery` compact constructor now returns `400 Bad Request` + `ProblemDetail` instead of `500 Internal Server Error` |
+
+### 🐛 Fixed
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 8 | `UserQuery` compact constructor throws `IllegalArgumentException` for invalid `page`/`size` values, but `RestExceptionHandler` had no handler — callers received `500 Internal Server Error` | Added `@ExceptionHandler(IllegalArgumentException.class)` returning `ProblemDetail` with `400 Bad Request` |
+| 9 | `UserController` imported `java.util.List` and `java.util.UUID` — both unused after the 1.3.0 mapper refactoring | Removed both dead imports |
+
+### 🔄 Changed
+
+| File | What changed | Why |
+|------|-------------|-----|
+| `UserControllerIntegrationTest` | Replaced raw JSON string helpers with `ObjectMapper` + typed DTOs (`CreateUserRequest`, `UpdateUserRequest`, `UserResponse`); uses `mongoTemplate.getDb().getCollection("users").drop()` for clean per-test isolation; consolidated all filter and pagination assertions into a single `listUsersWithFilters` test | Removes brittle string-building, aligns test setup/teardown with collection name used by the adapter, reduces test count while improving scenario coverage |
+
+### 🧪 Tests
+
+| Test | Status |
+|------|--------|
+| All 19 existing unit + integration tests | ✅ Pass — `mvn -B clean verify` |
+
+---
+
 ## [1.3.0] — 2026-04-22
 
 > **Refactoring** — code quality, correctness, and architectural purity pass.

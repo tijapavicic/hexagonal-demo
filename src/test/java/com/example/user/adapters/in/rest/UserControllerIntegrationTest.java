@@ -146,4 +146,3 @@ class UserControllerIntegrationTest {
         return objectMapper.readValue(result.getResponse().getContentAsString(), UserResponse.class).id();
     }
 }
-
