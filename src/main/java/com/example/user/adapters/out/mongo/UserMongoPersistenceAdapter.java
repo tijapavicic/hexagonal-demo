@@ -1,10 +1,10 @@
 package com.example.user.adapters.out.mongo;
 
 import com.example.user.application.port.out.UserPersistencePort;
+import com.example.user.application.query.UserQuery;
 import com.example.user.domain.model.User;
 import com.example.user.domain.model.UserPage;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -17,39 +17,37 @@ import java.util.Optional;
 public class UserMongoPersistenceAdapter implements UserPersistencePort {
 
     private final SpringDataUserRepository repository;
-    private final UserMongoMapper mapper;
     private final MongoTemplate mongoTemplate;
 
     public UserMongoPersistenceAdapter(SpringDataUserRepository repository,
-                                       UserMongoMapper mapper,
                                        MongoTemplate mongoTemplate) {
         this.repository = repository;
-        this.mapper = mapper;
         this.mongoTemplate = mongoTemplate;
     }
 
     @Override
     public User save(User user) {
-        return mapper.toDomain(repository.save(mapper.toDocument(user)));
+        return UserMongoMapper.toDomain(repository.save(UserMongoMapper.toDocument(user)));
     }
 
     @Override
     public Optional<User> findById(String id) {
-        return repository.findById(id).map(mapper::toDomain);
+        return repository.findById(id).map(UserMongoMapper::toDomain);
     }
 
     @Override
-    public UserPage findAll(String name, Integer minAge, Integer maxAge, int page, int size) {
-        Query query = buildQuery(name, minAge, maxAge);
-        long total = mongoTemplate.count(query, UserDocument.class);
+    public UserPage findAll(UserQuery query) {
+        Query mongoQuery = buildQuery(query);
+        long total = mongoTemplate.count(mongoQuery, UserDocument.class);
 
-        Pageable pageable = PageRequest.of(page, size);
-        query.with(pageable);
-        List<User> content = mongoTemplate.find(query, UserDocument.class)
-                .stream().map(mapper::toDomain).toList();
+        mongoQuery.with(PageRequest.of(query.page(), query.size()));
+        List<User> content = mongoTemplate.find(mongoQuery, UserDocument.class)
+                .stream()
+                .map(UserMongoMapper::toDomain)
+                .toList();
 
-        int totalPages = size == 0 ? 1 : (int) Math.ceil((double) total / size);
-        return new UserPage(content, total, totalPages, page, size);
+        int totalPages = (int) Math.ceil((double) total / query.size());
+        return new UserPage(content, total, totalPages, query.page(), query.size());
     }
 
     @Override
@@ -57,18 +55,20 @@ public class UserMongoPersistenceAdapter implements UserPersistencePort {
         repository.deleteById(id);
     }
 
-    private Query buildQuery(String name, Integer minAge, Integer maxAge) {
-        Query query = new Query();
-        if (name != null && !name.isBlank()) {
-            query.addCriteria(Criteria.where("name").regex(name, "i"));
+    private static Query buildQuery(UserQuery query) {
+        Query mongoQuery = new Query();
+
+        if (query.name() != null && !query.name().isBlank()) {
+            mongoQuery.addCriteria(Criteria.where("name").regex(query.name(), "i"));
         }
-        if (minAge != null || maxAge != null) {
-            Criteria ageCriteria = Criteria.where("age");
-            if (minAge != null) ageCriteria = ageCriteria.gte(minAge);
-            if (maxAge != null) ageCriteria = ageCriteria.lte(maxAge);
-            query.addCriteria(ageCriteria);
+
+        if (query.minAge() != null || query.maxAge() != null) {
+            Criteria age = Criteria.where("age");
+            if (query.minAge() != null) age = age.gte(query.minAge());
+            if (query.maxAge() != null) age = age.lte(query.maxAge());
+            mongoQuery.addCriteria(age);
         }
-        return query;
+
+        return mongoQuery;
     }
 }
-

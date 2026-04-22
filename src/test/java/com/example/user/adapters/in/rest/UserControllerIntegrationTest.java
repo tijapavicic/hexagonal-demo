@@ -129,7 +129,9 @@ class UserControllerIntegrationTest {
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(badBody))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title", is("Validation Failed")))
+                .andExpect(jsonPath("$.errors.name").exists());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
