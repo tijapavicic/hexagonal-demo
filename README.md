@@ -29,11 +29,11 @@ mvn spring-boot:run
 docker compose up --build
 ```
 
-App URL: `http://localhost:8080`
+App URL: `http://localhost:8111`
 
 ## Swagger UI
 
-`http://localhost:8080/swagger-ui.html`
+`http://localhost:8111/swagger-ui.html`
 
 ## API endpoints
 
