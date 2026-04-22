@@ -1,6 +1,7 @@
 package com.example.user.adapters.in.rest;
 
-import com.example.user.application.exception.UserNotFoundException;
+import com.example.user.domain.exception.UserNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -38,6 +39,51 @@ public class RestExceptionHandler {
         problem.setTitle("Validation Failed");
         problem.setDetail("One or more fields failed validation.");
         problem.setProperty("errors", fieldErrors);
+        return problem;
+    }
+
+    /**
+     * Handles {@link IllegalArgumentException} thrown by the {@code UserQuery} compact constructor
+     * when invalid {@code page} or {@code size} values are supplied by the caller.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Invalid Request Parameter");
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
+    /**
+     * Handles constraint violations on {@code @PathVariable} and {@code @RequestParam} parameters
+     * when the controller is annotated with {@code @Validated}.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> violations = ex.getConstraintViolations().stream()
+                .collect(Collectors.toMap(
+                        v -> v.getPropertyPath().toString(),
+                        v -> v.getMessage(),
+                        (first, second) -> first
+                ));
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Validation Failed");
+        problem.setDetail("One or more parameters failed validation.");
+        problem.setProperty("errors", violations);
+        return problem;
+    }
+
+    /**
+     * Catch-all handler to prevent unhandled exceptions from leaking internal details (500 with stack trace).
+     */
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ProblemDetail handleUnexpected(Exception ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problem.setTitle("Internal Server Error");
+        problem.setDetail("An unexpected error occurred. Please try again later.");
         return problem;
     }
 }

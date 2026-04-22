@@ -1,6 +1,6 @@
 package com.example.user.application.service;
 
-import com.example.user.application.exception.UserNotFoundException;
+import com.example.user.domain.exception.UserNotFoundException;
 import com.example.user.application.port.in.CreateUserUseCase;
 import com.example.user.application.port.in.DeleteUserUseCase;
 import com.example.user.application.port.in.GetUserUseCase;

@@ -1,6 +1,6 @@
 package com.example.user.application.service;
 
-import com.example.user.application.exception.UserNotFoundException;
+import com.example.user.domain.exception.UserNotFoundException;
 import com.example.user.application.port.out.UserPersistencePort;
 import com.example.user.application.query.UserQuery;
 import com.example.user.domain.model.User;
