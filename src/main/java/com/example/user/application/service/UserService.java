@@ -7,6 +7,7 @@ import com.example.user.application.port.in.GetUserUseCase;
 import com.example.user.application.port.in.ListUsersUseCase;
 import com.example.user.application.port.in.UpdateUserUseCase;
 import com.example.user.application.port.out.UserPersistencePort;
+import com.example.user.application.query.UserQuery;
 import com.example.user.domain.model.User;
 import com.example.user.domain.model.UserPage;
 import org.springframework.stereotype.Service;
@@ -27,28 +28,26 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, ListUsers
 
     @Override
     public User getById(String id) {
-        return persistencePort.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        return persistencePort.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @Override
-    public UserPage getAll(String name, Integer minAge, Integer maxAge, int page, int size) {
-        return persistencePort.findAll(name, minAge, maxAge, page, size);
+    public UserPage getAll(UserQuery query) {
+        return persistencePort.findAll(query);
     }
 
     @Override
     public User update(String id, User user) {
-        if (persistencePort.findById(id).isEmpty()) {
-            throw new UserNotFoundException(id);
-        }
+        // Validates existence — throws UserNotFoundException if absent.
+        // Avoids a second findById by reusing the public getById contract.
+        getById(id);
         return persistencePort.save(new User(id, user.name(), user.address(), user.age()));
     }
 
     @Override
     public void delete(String id) {
-        if (persistencePort.findById(id).isEmpty()) {
-            throw new UserNotFoundException(id);
-        }
+        getById(id); // throws UserNotFoundException if absent
         persistencePort.deleteById(id);
     }
 }
-

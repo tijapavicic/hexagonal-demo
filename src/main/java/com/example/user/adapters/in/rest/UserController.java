@@ -9,7 +9,7 @@ import com.example.user.application.port.in.DeleteUserUseCase;
 import com.example.user.application.port.in.GetUserUseCase;
 import com.example.user.application.port.in.ListUsersUseCase;
 import com.example.user.application.port.in.UpdateUserUseCase;
-import com.example.user.domain.model.UserPage;
+import com.example.user.application.query.UserQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -78,13 +78,8 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size")
             @RequestParam(defaultValue = "20") int size) {
-        UserPage result = listUsersUseCase.getAll(name, minAge, maxAge, page, size);
-        return new UserPageResponse(
-                result.content().stream().map(mapper::toResponse).toList(),
-                result.totalElements(),
-                result.totalPages(),
-                result.page(),
-                result.size());
+        return mapper.toPageResponse(
+                listUsersUseCase.getAll(UserQuery.of(name, minAge, maxAge, page, size)));
     }
 
     @Operation(summary = "Update an existing user")
@@ -100,4 +95,3 @@ public class UserController {
         deleteUserUseCase.delete(id);
     }
 }
-

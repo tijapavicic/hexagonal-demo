@@ -1,5 +1,13 @@
 # Hexagonal Demo (Spring Boot + MongoDB)
 
+![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)
+![Java](https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-6DB33F?style=flat-square&logo=springboot)
+![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=flat-square&logo=mongodb)
+![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
+
+> See [VERSIONS.md](VERSIONS.md) for the full changelog and list of fixed issues per release.
+
 User CRUD backend using a hexagonal architecture style.
 
 ## Domain model
