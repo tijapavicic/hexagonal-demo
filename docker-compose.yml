@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:7
+    container_name: hexagonal-demo-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: hexagonal_demo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hexagonal-demo-app
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/hexagonal_demo
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+
