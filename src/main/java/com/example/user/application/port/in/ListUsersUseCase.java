@@ -1,10 +1,8 @@
 package com.example.user.application.port.in;
 
-import com.example.user.domain.model.User;
-
-import java.util.List;
+import com.example.user.domain.model.UserPage;
 
 public interface ListUsersUseCase {
-    List<User> getAll();
+    UserPage getAll(String name, Integer minAge, Integer maxAge, int page, int size);
 }
 
