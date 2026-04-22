@@ -13,7 +13,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>hexagonal-demo</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.4.0</version>
     <name>hexagonal-demo</name>
     <description>Production-shaped RESTful User management service built with Spring Boot 3 and MongoDB, demonstrating Hexagonal Architecture (Ports and Adapters) with full CRUD, pagination, filtering, OpenAPI docs, and Testcontainers integration tests.</description>
 
