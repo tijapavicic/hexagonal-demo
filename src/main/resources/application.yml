@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: hexagonal-demo
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/hexagonal_demo}
+
+server:
+  port: ${SERVER_PORT:8080}
+
