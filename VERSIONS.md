@@ -5,6 +5,51 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventi
 
 ---
 
+## [1.5.0] — 2026-04-22
+
+> **Principal Engineer Refactoring** — domain boundary correctness, bug fix, hardened error handling, and security configuration.
+
+### ✅ Added
+
+| Item | Details |
+|------|---------|
+| `domain/exception/UserNotFoundException` | Moved exception to domain layer — it represents a domain rule violation, not an application or infrastructure concern; exposes `getUserId()` for structured error context |
+| `RestExceptionHandler.handleIllegalArgument` | `IllegalArgumentException` → `400 Bad Request` + `ProblemDetail`; was claimed in 1.4.0 changelog but not actually implemented |
+| `RestExceptionHandler.handleConstraintViolation` | `ConstraintViolationException` → `400 Bad Request` + `ProblemDetail` with per-field errors; required by `@Validated` on controller |
+| `RestExceptionHandler.handleUnexpected` | Catch-all `Exception` handler returning `500` `ProblemDetail` — prevents raw stack traces and internal details leaking to callers |
+| `@Validated` on `UserController` | Enables constraint validation on `@PathVariable` parameters |
+| `@NotBlank` on `id` path variables | `getById`, `update`, `delete` now reject blank IDs with `400` rather than forwarding garbage to the service layer |
+| `spring-boot-starter-actuator` | Dependency added; endpoints explicitly restricted to `health` and `info` only |
+| Actuator config in `application.yml` | `management.endpoints.web.exposure.include=health,info`; `health.show-details=never` — minimal surface, no sensitive data exposure |
+| `server.error` config | `include-message: never` and `include-stacktrace: never` — Spring's default error page no longer leaks exception messages |
+
+### 🐛 Fixed
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 10 | **`buildQuery` age filter bug** — condition `query.minAge() != null  query.maxAge() != null` (missing `\|\|`) caused the age filter to be silently ignored unless **both** `minAge` and `maxAge` were supplied | Changed to `query.minAge() != null \|\| query.maxAge() != null`; single-bound age filters now work correctly |
+| 11 | `UserNotFoundException` lived in the application layer despite being a domain concept — violated hexagonal architecture's domain isolation rule | Moved to `com.example.user.domain.exception`; application-layer class retained as `@Deprecated` subclass for backward compatibility |
+| 12 | `RestExceptionHandler.handleIllegalArgument` was documented in 1.4.0 changelog but never implemented — invalid `page`/`size` values still returned `500` | Handler implemented |
+
+### 🔄 Changed
+
+| File | What changed | Why |
+|------|-------------|-----|
+| `application/exception/UserNotFoundException` | Now extends `domain.exception.UserNotFoundException`; annotated `@Deprecated(since="1.5.0", forRemoval=true)` | Preserves backward-compat; signals removal intent |
+| `UserService` | Import updated to `domain.exception.UserNotFoundException` | Use canonical domain exception |
+| `RestExceptionHandler` | Import updated to `domain.exception.UserNotFoundException`; added `ConstraintViolationException` and catch-all `Exception` handlers | Complete error coverage |
+| `UserControllerIntegrationTest` (no change needed) | Integration test imports `CreateUserRequest` / `UpdateUserRequest` directly — unaffected by exception move | — |
+
+### 🧪 Tests
+
+| Test | Status |
+|------|--------|
+| `UserServiceTest` (7 tests) | ✅ Pass |
+| `UserControllerIntegrationTest` (5 tests) | ✅ Pass |
+| Total — `mvn -B clean verify` | ✅ **12 tests, 0 failures** |
+
+---
+
 ## [1.4.0] — 2026-04-22
 
 > **Persistence layer restored & error handling hardened** — out adapter created, dead-code removed, boundary violations sealed.
@@ -103,7 +148,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventi
 | `@DynamicPropertySource` | Injects the Testcontainers MongoDB random port into the Spring context before startup |
 | `@BeforeEach` collection drop | Drops `users` collection before each test for full isolation without container restarts |
 | Integration test coverage | create, read, update, delete, name-filter, age-range filter, pagination (`totalElements`, `totalPages`), validation errors (400) |
-| OpenAPI 3 / Swagger UI | `springdoc-openapi-starter-webmvc-ui:2.6.0`; available at `http://localhost:8080/swagger-ui.html` |
+| OpenAPI 3 / Swagger UI | `springdoc-openapi-starter-webmvc-ui:2.6.0`; available at `http://localhost:8111/swagger-ui.html` |
 | `OpenApiConfig` | `@OpenAPIDefinition` with title, version, and description |
 | Controller annotations | `@Tag`, `@Operation`, `@Parameter` on all `UserController` endpoints |
 | Pagination on `GET /api/users` | Query params: `name` (case-insensitive regex), `minAge`, `maxAge`, `page` (default `0`), `size` (default `20`) |

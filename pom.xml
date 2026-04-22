@@ -13,7 +13,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>hexagonal-demo</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
     <name>hexagonal-demo</name>
     <description>Production-shaped RESTful User management service built with Spring Boot 3 and MongoDB, demonstrating Hexagonal Architecture (Ports and Adapters) with full CRUD, pagination, filtering, OpenAPI docs, and Testcontainers integration tests.</description>
 
@@ -49,6 +49,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
 
         <!-- OpenAPI / Swagger UI -->
         <dependency>
@@ -81,6 +85,7 @@
     </dependencies>
 
     <build>
+        <finalName>hexagonal-demo</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

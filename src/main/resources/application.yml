@@ -8,8 +8,22 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  error:
+    include-message: never        # do not expose raw exception messages in Spring's default error response
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info      # minimal actuator surface — do NOT expose env, beans, mappings, etc.
+  endpoint:
+    health:
+      show-details: never         # hide sensitive internal details from /actuator/health
 
 logging:
   level:
     com.example: DEBUG
     org.springframework.data.mongodb: WARN
+
+

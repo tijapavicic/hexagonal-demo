@@ -14,7 +14,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Users", description = "User CRUD operations")
 @RestController
 @RequestMapping("/api/users")
+@Validated
 public class UserController {
 
     private final CreateUserUseCase createUserUseCase;
@@ -61,7 +64,7 @@ public class UserController {
 
     @Operation(summary = "Get user by ID")
     @GetMapping("/{id}")
-    public UserResponse getById(@PathVariable String id) {
+    public UserResponse getById(@PathVariable @NotBlank String id) {
         return mapper.toResponse(getUserUseCase.getById(id));
     }
 
@@ -84,14 +87,14 @@ public class UserController {
 
     @Operation(summary = "Update an existing user")
     @PutMapping("/{id}")
-    public UserResponse update(@PathVariable String id, @Valid @RequestBody UpdateUserRequest request) {
+    public UserResponse update(@PathVariable @NotBlank String id, @Valid @RequestBody UpdateUserRequest request) {
         return mapper.toResponse(updateUserUseCase.update(id, mapper.toDomain(request)));
     }
 
     @Operation(summary = "Delete a user")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String id) {
+    public void delete(@PathVariable @NotBlank String id) {
         deleteUserUseCase.delete(id);
     }
 }
