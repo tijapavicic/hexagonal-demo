@@ -8,9 +8,8 @@ import com.example.user.application.port.in.ListUsersUseCase;
 import com.example.user.application.port.in.UpdateUserUseCase;
 import com.example.user.application.port.out.UserPersistencePort;
 import com.example.user.domain.model.User;
+import com.example.user.domain.model.UserPage;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class UserService implements CreateUserUseCase, GetUserUseCase, ListUsersUseCase, UpdateUserUseCase, DeleteUserUseCase {
@@ -32,8 +31,8 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, ListUsers
     }
 
     @Override
-    public List<User> getAll() {
-        return persistencePort.findAll();
+    public UserPage getAll(String name, Integer minAge, Integer maxAge, int page, int size) {
+        return persistencePort.findAll(name, minAge, maxAge, page, size);
     }
 
     @Override

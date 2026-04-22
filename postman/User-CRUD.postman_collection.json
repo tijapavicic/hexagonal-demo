@@ -76,13 +76,39 @@
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{baseUrl}}/api/users",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "users"
+          "raw": "{{baseUrl}}/api/users?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users"],
+          "query": [
+            {"key": "page", "value": "0"},
+            {"key": "size", "value": "20"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "List Users - Filter by name",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/users?name=alice",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users"],
+          "query": [{"key": "name", "value": "alice"}]
+        }
+      }
+    },
+    {
+      "name": "List Users - Filter by age range",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/users?minAge=18&maxAge=30",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users"],
+          "query": [
+            {"key": "minAge", "value": "18"},
+            {"key": "maxAge", "value": "30"}
           ]
         }
       }

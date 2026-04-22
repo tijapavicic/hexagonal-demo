@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hexagonal Demo — Team Presentation</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #222636;
+      --border:    #2e3347;
+      --accent:    #6c8aff;
+      --accent2:   #a78bfa;
+      --green:     #34d399;
+      --orange:    #fb923c;
+      --red:       #f87171;
+      --text:      #e2e8f0;
+      --muted:     #8892a4;
+      --radius:    12px;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+
+    /* ── Slide engine ─────────────────────────────────────────────── */
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .45s ease, transform .45s ease;
+      transform: translateX(40px);
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+    }
+
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+
+    /* ── Navigation ───────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 100;
+    }
+
+    .nav button {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 24px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: .9rem;
+      font-family: inherit;
+      transition: background .2s, border-color .2s;
+    }
+
+    .nav button:hover { background: var(--accent); border-color: var(--accent); }
+    .nav button:disabled { opacity: .3; cursor: default; }
+
+    .nav .counter {
+      font-size: .85rem;
+      color: var(--muted);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* progress bar */
+    .progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .4s ease;
+      z-index: 200;
+    }
+
+    /* slide number dots */
+    .dots {
+      position: fixed;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
+
+    .dot.active { background: var(--accent); transform: scale(1.4); }
+
+    /* keyboard hint */
+    .hint {
+      position: fixed;
+      bottom: 80px;
+      right: 28px;
+      font-size: .72rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* ── Typography helpers ───────────────────────────────────────── */
+    .label {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      background: linear-gradient(135deg, var(--text) 40%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h2 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 28px;
+      color: var(--text);
+    }
+
+    h2 .accent { color: var(--accent); }
+
+    p { color: var(--muted); max-width: 680px; }
+
+    /* ── Card grid ────────────────────────────────────────────────── */
+    .grid {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+      max-width: 980px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .card .card-icon { font-size: 2rem; margin-bottom: 12px; }
+    .card .card-title { font-weight: 700; margin-bottom: 6px; font-size: 1rem; }
+    .card .card-body { font-size: .88rem; color: var(--muted); }
+
+    /* ── Code block ───────────────────────────────────────────────── */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      font-family: var(--font-mono);
+      font-size: .82rem;
+      line-height: 1.65;
+      overflow-x: auto;
+      max-width: 820px;
+      width: 100%;
+    }
+
+    .kw  { color: #c792ea; }
+    .cls { color: #82aaff; }
+    .ann { color: var(--green); }
+    .str { color: #c3e88d; }
+    .cmt { color: #546e7a; font-style: italic; }
+    .typ { color: #ffcb6b; }
+
+    /* ── Arch diagram ─────────────────────────────────────────────── */
+    .arch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+      max-width: 820px;
+    }
+
+    .arch-ring {
+      width: 100%;
+      border-radius: var(--radius);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: .9rem;
+      font-weight: 600;
+    }
+
+    .ring-domain   { background: #1a2744; border: 2px solid #6c8aff; color: #93c5fd; }
+    .ring-app      { background: #1a2733; border: 2px dashed #34d399; color: #6ee7b7; }
+    .ring-adapters { background: #1f1a2e; border: 2px dashed #a78bfa; color: #c4b5fd; }
+
+    .arch-arrow {
+      font-size: 1.4rem;
+      color: var(--muted);
+      line-height: 1;
+      margin: 2px 0;
+    }
+
+    .ring-files {
+      margin-left: auto;
+      font-size: .75rem;
+      font-weight: 400;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ── Flow diagram ─────────────────────────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 900px;
+    }
+
+    .flow-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      text-align: center;
+      min-width: 130px;
+    }
+
+    .flow-box .fb-label { font-size: .7rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .08em; }
+    .flow-box .fb-name  { font-weight: 700; font-size: .95rem; }
+    .flow-box.highlight { border-color: var(--accent); background: #1a1d3a; }
+    .flow-arrow { font-size: 1.4rem; color: var(--muted); padding: 0 6px; }
+
+    /* ── Table ────────────────────────────────────────────────────── */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 860px;
+      font-size: .88rem;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      padding: 10px 16px;
+      text-align: left;
+    }
+
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    td:first-child { color: var(--text); font-weight: 600; font-family: var(--font-mono); font-size: .82rem; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Badge / chip ─────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .badge-blue   { background: #1e3a6e; color: #93c5fd; }
+    .badge-green  { background: #14432a; color: #6ee7b7; }
+    .badge-purple { background: #2e1b5e; color: #c4b5fd; }
+    .badge-orange { background: #431d08; color: #fdba74; }
+
+    /* ── Stack row ────────────────────────────────────────────────── */
+    .stack-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stack-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .stack-item .si-icon { font-size: 2rem; margin-bottom: 8px; }
+    .stack-item .si-name { font-weight: 700; font-size: .9rem; }
+    .stack-item .si-ver  { font-size: .75rem; color: var(--muted); }
+
+    /* ── Title slide ──────────────────────────────────────────────── */
+    .title-slide {
+      text-align: center;
+      gap: 20px;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .tagline {
+      margin-top: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 32px;
+      font-size: .9rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── Split layout ─────────────────────────────────────────────── */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    /* ── List ─────────────────────────────────────────────────────── */
+    ul.nice {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 680px;
+    }
+
+    ul.nice li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: .95rem;
+      color: var(--muted);
+    }
+
+    ul.nice li .bullet {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    ul.nice li strong { color: var(--text); }
+
+    /* ── Test pyramid ─────────────────────────────────────────────── */
+    .pyramid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pyr-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: .85rem;
+    }
+
+    /* ── Endpoint table row colours ───────────────────────────────── */
+    .method {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .m-post   { background: #14432a; color: #6ee7b7; }
+    .m-get    { background: #1e3a6e; color: #93c5fd; }
+    .m-put    { background: #431d08; color: #fdba74; }
+    .m-delete { background: #3b1212; color: #fca5a5; }
+
+    /* ── Thank you slide ──────────────────────────────────────────── */
+    .links { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
+    .link-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-size: .88rem;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="dots" id="dots"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ── SLIDE 1 · Title ──────────────────────────────────────────── -->
+  <section class="slide active title-slide">
+    <div class="label">Team Presentation · April 2026</div>
+    <h1>Hexagonal Architecture<br/>with Spring Boot</h1>
+    <div class="subtitle">A clean, testable User CRUD service backed by MongoDB</div>
+    <div class="tagline">
+      "The application core must not depend on any infrastructure detail.<br/>
+      Infrastructure depends on the core — never the other way around."
+    </div>
+    <div class="stack-row" style="margin-top:36px">
+      <div class="stack-item"><div class="si-icon">☕</div><div class="si-name">Java 17</div><div class="si-ver">LTS</div></div>
+      <div class="stack-item"><div class="si-icon">🍃</div><div class="si-name">Spring Boot</div><div class="si-ver">3.3.4</div></div>
+      <div class="stack-item"><div class="si-icon">🍃</div><div class="si-name">MongoDB</div><div class="si-ver">7</div></div>
+      <div class="stack-item"><div class="si-icon">🐳</div><div class="si-name">Docker</div><div class="si-ver">Compose</div></div>
+      <div class="stack-item"><div class="si-icon">🧪</div><div class="si-name">Testcontainers</div><div class="si-ver">1.20.1</div></div>
+      <div class="stack-item"><div class="si-icon">📖</div><div class="si-name">Swagger UI</div><div class="si-ver">OpenAPI 3</div></div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 2 · Agenda ─────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Overview</div>
+    <h2>What We'll Cover</h2>
+    <div class="grid grid-2" style="max-width:820px">
+      <div class="card"><div class="card-icon">🏛️</div><div class="card-title">1 · Hexagonal Architecture</div><div class="card-body">Core concept, layers, ports & adapters, and why it matters.</div></div>
+      <div class="card"><div class="card-icon">📦</div><div class="card-title">2 · Project Structure</div><div class="card-body">Package layout, domain model, and how every file fits the pattern.</div></div>
+      <div class="card"><div class="card-icon">🔌</div><div class="card-title">3 · REST API</div><div class="card-body">CRUD endpoints, validation, OpenAPI / Swagger UI.</div></div>
+      <div class="card"><div class="card-icon">🗄️</div><div class="card-title">4 · MongoDB Adapter</div><div class="card-body">Dynamic queries, pagination, filtering with MongoTemplate.</div></div>
+      <div class="card"><div class="card-icon">🧪</div><div class="card-title">5 · Testing Strategy</div><div class="card-body">Unit tests (Mockito) + Integration tests (Testcontainers).</div></div>
+      <div class="card"><div class="card-icon">🐳</div><div class="card-title">6 · Docker & Running</div><div class="card-body">Docker Compose stack, environment config, live demo.</div></div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 3 · The Problem ────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Motivation</div>
+    <h2>The Problem with <span class="accent">Traditional Layering</span></h2>
+    <div class="split">
+      <div>
+        <div style="font-size:.88rem; color:var(--muted); margin-bottom:16px">Classic approach — business logic leaks into every layer:</div>
+        <pre style="font-size:.78rem"><span class="cmt">// Controller knows about persistence details</span>
+<span class="ann">@GetMapping</span>
+<span class="kw">public</span> List&lt;<span class="typ">User</span>&gt; getAll() {
+  <span class="kw">return</span> userRepository        <span class="cmt">// ← direct repo call</span>
+    .findByActiveTrue()       <span class="cmt">// ← MongoDB detail!</span>
+    .stream()
+    .filter(<span class="typ">User</span>::isVerified) <span class="cmt">// ← biz logic in controller</span>
+    .toList();
+}</pre>
+        <ul class="nice" style="margin-top:16px">
+          <li><div class="bullet">✗</div><span>Hard to unit-test without a real database</span></li>
+          <li><div class="bullet">✗</div><span>Swapping MongoDB → PostgreSQL touches every layer</span></li>
+          <li><div class="bullet">✗</div><span>Business rules scattered across controllers & repos</span></li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:.88rem; color:var(--muted); margin-bottom:16px">Hexagonal approach — the core knows nothing about the outside:</div>
+        <pre style="font-size:.78rem"><span class="cmt">// Service only knows about its port interface</span>
+<span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="cls">UserService</span> <span class="kw">implements</span> <span class="cls">ListUsersUseCase</span> {
+
+  <span class="kw">private final</span> <span class="typ">UserPersistencePort</span> port; <span class="cmt">// interface!</span>
+
+  <span class="kw">public</span> <span class="typ">UserPage</span> getAll(...) {
+    <span class="kw">return</span> port.findAll(...); <span class="cmt">// no MongoDB detail</span>
+  }
+}</pre>
+        <ul class="nice" style="margin-top:16px">
+          <li><div class="bullet">✓</div><span><strong>Test business logic with zero infrastructure</strong></span></li>
+          <li><div class="bullet">✓</div><span><strong>Swap DB by replacing one adapter class only</strong></span></li>
+          <li><div class="bullet">✓</div><span><strong>Business rules in one predictable place</strong></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 4 · Architecture ────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Architecture</div>
+    <h2>Three Rings, One Rule</h2>
+    <div class="arch">
+      <div class="arch-ring ring-adapters">
+        <span>🔌 Adapters (outer ring)</span>
+        <span class="ring-files">UserController · UserMongoPersistenceAdapter · DTOs</span>
+      </div>
+      <div class="arch-arrow">⬆ depends on ⬆</div>
+      <div class="arch-ring ring-app" style="width:80%">
+        <span>⚙️ Application (middle ring)</span>
+        <span class="ring-files">UserService · Ports (interfaces) · Exceptions</span>
+      </div>
+      <div class="arch-arrow">⬆ depends on ⬆</div>
+      <div class="arch-ring ring-domain" style="width:55%">
+        <span>💎 Domain (inner ring)</span>
+        <span class="ring-files">User · UserPage — pure Java records</span>
+      </div>
+    </div>
+    <div style="margin-top:28px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
+      <span class="badge badge-blue">Dependencies point INWARD only</span>
+      <span class="badge badge-green">Domain has ZERO framework imports</span>
+      <span class="badge badge-purple">Ports are just Java interfaces</span>
+      <span class="badge badge-orange">Spring wires implementations at runtime</span>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 5 · Package structure ──────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Project Structure</div>
+    <h2>Package Layout</h2>
+    <div class="split">
+      <pre style="font-size:.76rem">com.example
+│
+├── config/
+│   └── OpenApiConfig.java       <span class="cmt"># Swagger definition</span>
+│
+└── user/
+    ├── <span class="ann">domain/</span>                  <span class="cmt">← inner ring</span>
+    │   └── model/
+    │       ├── User.java
+    │       └── UserPage.java
+    │
+    ├── <span class="cls">application/</span>             <span class="cmt">← middle ring</span>
+    │   ├── port/
+    │   │   ├── in/              <span class="cmt"># inbound ports</span>
+    │   │   │   ├── CreateUserUseCase.java
+    │   │   │   ├── GetUserUseCase.java
+    │   │   │   ├── ListUsersUseCase.java
+    │   │   │   ├── UpdateUserUseCase.java
+    │   │   │   └── DeleteUserUseCase.java
+    │   │   └── out/             <span class="cmt"># outbound port</span>
+    │   │       └── UserPersistencePort.java
+    │   ├── service/
+    │   │   └── UserService.java
+    │   └── exception/
+    │       └── UserNotFoundException.java
+    │
+    └── <span class="typ">adapters/</span>               <span class="cmt">← outer ring</span>
+        ├── in/rest/
+        │   ├── UserController.java
+        │   ├── UserRestMapper.java
+        │   ├── RestExceptionHandler.java
+        │   └── dto/
+        └── out/mongo/
+            ├── UserMongoPersistenceAdapter.java
+            ├── SpringDataUserRepository.java
+            ├── UserDocument.java
+            └── UserMongoMapper.java</pre>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">💎 Domain model</div>
+          <div class="card-body" style="margin-top:6px">
+            <code style="font-family:var(--font-mono); font-size:.82rem; color:var(--green)">record User(String id, String name, String address, Integer age)</code><br/><br/>
+            Pure Java record. No annotations. No Spring. No MongoDB. The most stable thing in the codebase.
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">🔌 Ports = interfaces</div>
+          <div class="card-body" style="margin-top:6px">Inbound ports describe what the app offers. Outbound ports describe what the app needs. Both live in the application layer.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🗺️ Mappers keep layers clean</div>
+          <div class="card-body" style="margin-top:6px">Each boundary has its own mapper: <code style="font-family:var(--font-mono); color:var(--accent)">UserRestMapper</code> and <code style="font-family:var(--font-mono); color:var(--accent)">UserMongoMapper</code> translate without polluting domain objects.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 6 · Request flow ────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Request Lifecycle</div>
+    <h2>How a <span class="accent">POST /api/users</span> Flows Through the System</h2>
+    <div class="flow">
+      <div class="flow-box">
+        <div class="fb-label">HTTP</div>
+        <div class="fb-name">Client</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">
+        <div class="fb-label">Adapter IN</div>
+        <div class="fb-name">UserController</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">
+        <div class="fb-label">Port IN</div>
+        <div class="fb-name">CreateUserUseCase</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">
+        <div class="fb-label">Service</div>
+        <div class="fb-name">UserService</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">
+        <div class="fb-label">Port OUT</div>
+        <div class="fb-name">UserPersistencePort</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">
+        <div class="fb-label">Adapter OUT</div>
+        <div class="fb-name">MongoAdapter</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">
+        <div class="fb-label">Database</div>
+        <div class="fb-name">MongoDB</div>
+      </div>
+    </div>
+    <pre style="margin-top:32px; max-width:820px; font-size:.79rem"><span class="cmt">// Controller — translate HTTP DTO → domain, call use case, translate back</span>
+<span class="ann">@PostMapping</span> <span class="ann">@ResponseStatus</span>(<span class="typ">HttpStatus</span>.CREATED)
+<span class="kw">public</span> <span class="typ">UserResponse</span> create(<span class="ann">@Valid</span> <span class="ann">@RequestBody</span> <span class="typ">CreateUserRequest</span> req) {
+  <span class="kw">return</span> mapper.toResponse(                   <span class="cmt">// 3. domain → HTTP DTO</span>
+           createUserUseCase.create(            <span class="cmt">// 2. call use case</span>
+             mapper.toDomain(req)));            <span class="cmt">// 1. HTTP DTO → domain</span>
+}
+
+<span class="cmt">// Service — pure business logic, no HTTP/MongoDB knowledge</span>
+<span class="kw">public</span> <span class="typ">User</span> create(<span class="typ">User</span> user) {
+  <span class="kw">return</span> persistencePort.save(
+    <span class="kw">new</span> <span class="typ">User</span>(<span class="kw">null</span>, user.name(), user.address(), user.age())); <span class="cmt">// strip client id</span>
+}</pre>
+  </section>
+
+  <!-- ── SLIDE 7 · REST API ────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">REST API</div>
+    <h2>CRUD Endpoints</h2>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Path</th><th>Description</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method m-post">POST</span></td><td>/api/users</td><td>Create a user — validates name, address, age (0–150)</td><td>201 Created</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td>/api/users/{id}</td><td>Fetch single user by MongoDB ObjectId</td><td>200 / 404</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td>/api/users</td><td>Paginated list with optional <code>name</code>, <code>minAge</code>, <code>maxAge</code>, <code>page</code>, <code>size</code></td><td>200</td></tr>
+        <tr><td><span class="method m-put">PUT</span></td><td>/api/users/{id}</td><td>Full update of name / address / age</td><td>200 / 404</td></tr>
+        <tr><td><span class="method m-delete">DELETE</span></td><td>/api/users/{id}</td><td>Remove user, idempotency guard in service</td><td>204 / 404</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
+      <div class="card" style="max-width:280px; padding:16px">
+        <div class="card-title">📋 Request validation</div>
+        <div class="card-body" style="margin-top:6px;font-size:.82rem">
+          <code style="font-family:var(--font-mono); color:var(--green)">@NotBlank</code> on name &amp; address<br/>
+          <code style="font-family:var(--font-mono); color:var(--green)">@Min(0) @Max(150)</code> on age<br/>
+          Returns <code style="font-family:var(--font-mono); color:var(--orange)">400</code> with field-level error map
+        </div>
+      </div>
+      <div class="card" style="max-width:280px; padding:16px">
+        <div class="card-title">📖 Swagger UI</div>
+        <div class="card-body" style="margin-top:6px;font-size:.82rem">
+          Auto-generated from <code style="font-family:var(--font-mono); color:var(--green)">@Operation</code>, <code style="font-family:var(--font-mono); color:var(--green)">@Tag</code>, <code style="font-family:var(--font-mono); color:var(--green)">@Parameter</code><br/><br/>
+          Available at:<br/>
+          <code style="font-family:var(--font-mono); color:var(--accent)">localhost:8080/swagger-ui.html</code>
+        </div>
+      </div>
+      <div class="card" style="max-width:280px; padding:16px">
+        <div class="card-title">📬 Postman Collection</div>
+        <div class="card-body" style="margin-top:6px;font-size:.82rem">
+          Ready-to-import collection at<br/>
+          <code style="font-family:var(--font-mono); color:var(--accent)">postman/User-CRUD.postman_collection.json</code><br/><br/>
+          Create test auto-saves <code style="font-family:var(--font-mono); color:var(--green)">userId</code> variable
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 8 · MongoDB Adapter ─────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Outbound Adapter</div>
+    <h2>MongoDB Adapter — <span class="accent">Dynamic Queries</span></h2>
+    <div class="split">
+      <pre style="font-size:.76rem"><span class="ann">@Override</span>
+<span class="kw">public</span> <span class="typ">UserPage</span> findAll(
+    <span class="typ">String</span> name, <span class="typ">Integer</span> minAge,
+    <span class="typ">Integer</span> maxAge, <span class="kw">int</span> page, <span class="kw">int</span> size) {
+
+  <span class="cmt">// 1. Build optional filter criteria</span>
+  <span class="typ">Query</span> query = buildQuery(name, minAge, maxAge);
+
+  <span class="cmt">// 2. Count BEFORE applying pagination</span>
+  <span class="kw">long</span> total = mongoTemplate.count(query, <span class="typ">UserDocument</span>.<span class="kw">class</span>);
+
+  <span class="cmt">// 3. Apply pagination</span>
+  query.with(<span class="typ">PageRequest</span>.of(page, size));
+
+  <span class="cmt">// 4. Fetch page, map documents → domain objects</span>
+  <span class="typ">List</span>&lt;<span class="typ">User</span>&gt; content = mongoTemplate
+    .find(query, <span class="typ">UserDocument</span>.<span class="kw">class</span>)
+    .stream().map(mapper::toDomain).toList();
+
+  <span class="kw">return new</span> <span class="typ">UserPage</span>(content, total,
+    (<span class="kw">int</span>) <span class="typ">Math</span>.ceil((<span class="kw">double</span>) total / size),
+    page, size);
+}
+
+<span class="kw">private</span> <span class="typ">Query</span> buildQuery(<span class="typ">String</span> name, <span class="typ">Integer</span> min, <span class="typ">Integer</span> max) {
+  <span class="typ">Query</span> q = <span class="kw">new</span> <span class="typ">Query</span>();
+  <span class="kw">if</span> (name != <span class="kw">null</span> && !name.isBlank())
+    q.addCriteria(<span class="typ">Criteria</span>.where(<span class="str">"name"</span>).regex(name, <span class="str">"i"</span>));
+  <span class="kw">if</span> (min != <span class="kw">null</span> || max != <span class="kw">null</span>) {
+    <span class="typ">Criteria</span> age = <span class="typ">Criteria</span>.where(<span class="str">"age"</span>);
+    <span class="kw">if</span> (min != <span class="kw">null</span>) age = age.gte(min);
+    <span class="kw">if</span> (max != <span class="kw">null</span>) age = age.lte(max);
+    q.addCriteria(age);
+  }
+  <span class="kw">return</span> q;
+}</pre>
+      <div>
+        <ul class="nice">
+          <li><div class="bullet">1</div><span><strong>Optional filters</strong> — only criteria that are non-null are added to the query</span></li>
+          <li><div class="bullet">2</div><span><strong>Name filter</strong> uses a case-insensitive MongoDB regex <code style="font-family:var(--font-mono); color:var(--green)">/alice/i</code></span></li>
+          <li><div class="bullet">3</div><span><strong>Age range</strong> uses Mongo <code style="font-family:var(--font-mono); color:var(--green)">$gte</code> / <code style="font-family:var(--font-mono); color:var(--green)">$lte</code> — either bound is optional</span></li>
+          <li><div class="bullet">4</div><span><strong>Count before paginating</strong> so <code>totalElements</code> reflects all matches, not just one page</span></li>
+          <li><div class="bullet">5</div><span><strong>Domain objects returned</strong> — the service never sees a <code>UserDocument</code></span></li>
+        </ul>
+        <div class="card" style="margin-top:20px; padding:16px">
+          <div class="card-title">Example — filter by name + age range</div>
+          <div class="card-body" style="margin-top:6px; font-family:var(--font-mono); font-size:.8rem; color:var(--accent)">
+            GET /api/users?name=ali&minAge=25&maxAge=35&page=0&size=10
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 9 · Testing ──────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Quality</div>
+    <h2>Two-Layer <span class="accent">Testing Strategy</span></h2>
+    <div class="split">
+      <div>
+        <div class="card" style="border-color:var(--green); margin-bottom:16px">
+          <div class="card-title" style="color:var(--green)">🏎 Unit Tests — UserServiceTest</div>
+          <div class="card-body" style="margin-top:8px; font-size:.84rem">
+            <span class="badge badge-green" style="margin-bottom:8px; display:inline-block">No Docker · No Spring · ~10ms</span><br/>
+            Tests all business logic in isolation using a <strong>Mockito mock</strong> of <code style="font-family:var(--font-mono)">UserPersistencePort</code>.<br/><br/>
+            Covers: id-stripping on create · not-found exception · delegated pagination
+          </div>
+        </div>
+        <pre style="font-size:.77rem"><span class="ann">@ExtendWith</span>(<span class="typ">MockitoExtension</span>.<span class="kw">class</span>)
+<span class="kw">class</span> <span class="cls">UserServiceTest</span> {
+
+  <span class="ann">@Mock</span> <span class="typ">UserPersistencePort</span> persistencePort;
+
+  <span class="ann">@Test</span>
+  <span class="kw">void</span> createShouldStripClientId() {
+    when(persistencePort.save(any())).thenReturn(saved);
+    userService.create(<span class="kw">new</span> <span class="typ">User</span>(<span class="str">"client-id"</span>, ...));
+    verify(persistencePort).save(<span class="kw">new</span> <span class="typ">User</span>(<span class="kw">null</span>, ...)); <span class="cmt">// id = null</span>
+  }
+}</pre>
+      </div>
+      <div>
+        <div class="card" style="border-color:var(--accent2); margin-bottom:16px">
+          <div class="card-title" style="color:var(--accent2)">🐳 Integration Tests — UserControllerIntegrationTest</div>
+          <div class="card-body" style="margin-top:8px; font-size:.84rem">
+            <span class="badge badge-purple" style="margin-bottom:8px; display:inline-block">Real MongoDB in Docker · Full Spring context</span><br/>
+            Testcontainers spins up a real <code style="font-family:var(--font-mono)">mongo:7</code> container. <code style="font-family:var(--font-mono)">@DynamicPropertySource</code> injects the random port into Spring before context starts.
+          </div>
+        </div>
+        <pre style="font-size:.77rem"><span class="ann">@Testcontainers</span>
+<span class="kw">class</span> <span class="cls">UserControllerIntegrationTest</span> {
+
+  <span class="ann">@Container</span> <span class="kw">static</span> <span class="typ">MongoDBContainer</span> mongo
+    = <span class="kw">new</span> <span class="typ">MongoDBContainer</span>(<span class="str">"mongo:7"</span>);
+
+  <span class="ann">@DynamicPropertySource</span>
+  <span class="kw">static void</span> mongoProps(<span class="typ">DynamicPropertyRegistry</span> r) {
+    r.add(<span class="str">"spring.data.mongodb.uri"</span>,
+          mongo::getReplicaSetUrl);   <span class="cmt">// random port!</span>
+  }
+
+  <span class="cmt">// Tests: create, get, update, delete,</span>
+  <span class="cmt">//        filter by name/age, pagination,</span>
+  <span class="cmt">//        validation errors (400)</span>
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 10 · Docker ──────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Deployment</div>
+    <h2>Docker Compose Stack</h2>
+    <div class="split">
+      <pre style="font-size:.79rem"><span class="cmt"># docker-compose.yml</span>
+services:
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - <span class="str">"27017:27017"</span>
+    volumes:
+      - mongo_data:/data/db   <span class="cmt"># data persists</span>
+
+  app:
+    build: .                  <span class="cmt"># multi-stage Dockerfile</span>
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/hexagonal_demo
+      SERVER_PORT: 8080
+    ports:
+      - <span class="str">"8080:8080"</span>
+
+volumes:
+  mongo_data:</pre>
+      <div>
+        <ul class="nice">
+          <li><div class="bullet">1</div><span><strong>Multi-stage Dockerfile</strong> — Maven build stage + slim JRE runtime image, keeps image small</span></li>
+          <li><div class="bullet">2</div><span><strong><code style="font-family:var(--font-mono)">depends_on</code></strong> — Compose starts MongoDB before the app</span></li>
+          <li><div class="bullet">3</div><span><strong>Named volume</strong> — data survives container restarts</span></li>
+          <li><div class="bullet">4</div><span><strong>Environment variables</strong> — <code style="font-family:var(--font-mono)">MONGODB_URI</code> overrides <code style="font-family:var(--font-mono)">application.yml</code> at runtime</span></li>
+        </ul>
+        <div class="card" style="margin-top:20px; padding:16px">
+          <div class="card-title">🚀 One command to run everything</div>
+          <pre style="margin-top:10px; border:none; background:transparent; padding:0; font-size:.82rem">docker compose up --build</pre>
+          <div class="card-body" style="margin-top:8px;font-size:.82rem">
+            App →  <code style="font-family:var(--font-mono); color:var(--accent)">http://localhost:8080</code><br/>
+            Swagger → <code style="font-family:var(--font-mono); color:var(--accent)">http://localhost:8080/swagger-ui.html</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 11 · Key benefits ───────────────────────────────────── -->
+  <section class="slide">
+    <div class="label">Takeaways</div>
+    <h2>Why Hexagonal Architecture <span class="accent">Pays Off</span></h2>
+    <div class="grid grid-3" style="max-width:900px">
+      <div class="card">
+        <div class="card-icon">🔄</div>
+        <div class="card-title">Replaceability</div>
+        <div class="card-body">Swap MongoDB for PostgreSQL by writing one new adapter class. The domain and service layer don't change.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Fast Unit Tests</div>
+        <div class="card-body">Business logic tested in milliseconds with zero Spring context, zero Docker, zero database. Just Java + Mockito.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧩</div>
+        <div class="card-title">Multiple Entry Points</div>
+        <div class="card-body">Add a Kafka consumer or a CLI that reuses existing use cases — just write a new inbound adapter.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">Single Responsibility</div>
+        <div class="card-body">Every class has one job: translate (adapters) or orchestrate (service) or model (domain).</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <div class="card-title">Domain Stability</div>
+        <div class="card-body"><code style="font-family:var(--font-mono)">User</code> and <code style="font-family:var(--font-mono)">UserPage</code> are pure Java records. They never change due to a framework upgrade.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📖</div>
+        <div class="card-title">Self-Documenting</div>
+        <div class="card-body">Package names spell out the architecture. Any developer instantly knows where to add new code.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 12 · Thank you ──────────────────────────────────────── -->
+  <section class="slide title-slide">
+    <div class="label">Thank You</div>
+    <h1>Questions?</h1>
+    <div class="subtitle">All code, docs and collection are in the repository</div>
+    <div class="links">
+      <div class="link-chip">📁 src/ — application source</div>
+      <div class="link-chip">📄 docs/hexagonal-architecture.md</div>
+      <div class="link-chip">📄 docs/testcontainers.md</div>
+      <div class="link-chip">📬 postman/User-CRUD.postman_collection.json</div>
+      <div class="link-chip">🐳 docker-compose.yml</div>
+      <div class="link-chip">📖 localhost:8080/swagger-ui.html</div>
+    </div>
+    <div style="margin-top:36px; display:flex; gap:24px; flex-wrap:wrap; justify-content:center">
+      <div style="text-align:center">
+        <div style="font-size:.75rem; color:var(--muted); margin-bottom:6px">Run locally</div>
+        <code style="font-family:var(--font-mono); font-size:.85rem; color:var(--green)">mvn spring-boot:run</code>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.75rem; color:var(--muted); margin-bottom:6px">Run with Docker</div>
+        <code style="font-family:var(--font-mono); font-size:.85rem; color:var(--green)">docker compose up --build</code>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.75rem; color:var(--muted); margin-bottom:6px">Run tests</div>
+        <code style="font-family:var(--font-mono); font-size:.85rem; color:var(--green)">mvn test</code>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<div class="nav">
+  <button id="prev" disabled>← Prev</button>
+  <span class="counter" id="counter"></span>
+  <button id="next">Next →</button>
+</div>
+
+<div class="hint">← → arrow keys to navigate</div>
+
+<script>
+  const slides  = Array.from(document.querySelectorAll('.slide'));
+  const dotsEl  = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const prev    = document.getElementById('prev');
+  const next    = document.getElementById('next');
+  const progress = document.getElementById('progress');
+  let current   = 0;
+
+  // build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= slides.length) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current - (current > idx ? -1 : 1) >= 0
+      ? current
+      : current].classList.remove('exit'), 450);
+
+    const old = current;
+    current = idx;
+
+    slides[old].classList.remove('active');
+    setTimeout(() => slides[old].classList.remove('exit'), 450);
+    slides[old].classList.add('exit');
+
+    slides[current].classList.add('active');
+
+    // update dots
+    document.querySelectorAll('.dot').forEach((d, i) =>
+      d.classList.toggle('active', i === current));
+
+    // progress bar
+    progress.style.width = ((current + 1) / slides.length * 100) + '%';
+
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    prev.disabled = current === 0;
+    next.disabled = current === slides.length - 1;
+  }
+
+  // init
+  goTo(0);
+
+  prev.addEventListener('click', () => goTo(current - 1));
+  next.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+</script>
+
+</body>
+</html>
+

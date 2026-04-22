@@ -3,12 +3,14 @@ package com.example.user.application.service;
 import com.example.user.application.exception.UserNotFoundException;
 import com.example.user.application.port.out.UserPersistencePort;
 import com.example.user.domain.model.User;
+import com.example.user.domain.model.UserPage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +49,16 @@ class UserServiceTest {
         when(persistencePort.findById("missing")).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> userService.getById("missing"));
+    }
+
+    @Test
+    void getAllShouldDelegateToPersistence() {
+        UserPage page = new UserPage(List.of(), 0, 0, 0, 20);
+        when(persistencePort.findAll(null, null, null, 0, 20)).thenReturn(page);
+
+        UserPage result = userService.getAll(null, null, null, 0, 20);
+
+        assertEquals(page, result);
     }
 }
 
