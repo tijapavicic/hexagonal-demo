@@ -710,7 +710,7 @@
         <div class="card-body" style="margin-top:6px;font-size:.82rem">
           Auto-generated from <code style="font-family:var(--font-mono); color:var(--green)">@Operation</code>, <code style="font-family:var(--font-mono); color:var(--green)">@Tag</code>, <code style="font-family:var(--font-mono); color:var(--green)">@Parameter</code><br/><br/>
           Available at:<br/>
-          <code style="font-family:var(--font-mono); color:var(--accent)">localhost:8080/swagger-ui.html</code>
+          <code style="font-family:var(--font-mono); color:var(--accent)">localhost:8111/swagger-ui.html</code>
         </div>
       </div>
       <div class="card" style="max-width:280px; padding:16px">
@@ -859,9 +859,9 @@ services:
       - mongodb
     environment:
       MONGODB_URI: mongodb://mongodb:27017/hexagonal_demo
-      SERVER_PORT: 8080
+      SERVER_PORT: 8111
     ports:
-      - <span class="str">"8080:8080"</span>
+      - <span class="str">"8111:8111"</span>
 
 volumes:
   mongo_data:</pre>
@@ -876,8 +876,8 @@ volumes:
           <div class="card-title">🚀 One command to run everything</div>
           <pre style="margin-top:10px; border:none; background:transparent; padding:0; font-size:.82rem">docker compose up --build</pre>
           <div class="card-body" style="margin-top:8px;font-size:.82rem">
-            App →  <code style="font-family:var(--font-mono); color:var(--accent)">http://localhost:8080</code><br/>
-            Swagger → <code style="font-family:var(--font-mono); color:var(--accent)">http://localhost:8080/swagger-ui.html</code>
+            App →  <code style="font-family:var(--font-mono); color:var(--accent)">http://localhost:8111</code><br/>
+            Swagger → <code style="font-family:var(--font-mono); color:var(--accent)">http://localhost:8111/swagger-ui.html</code>
           </div>
         </div>
       </div>
@@ -933,7 +933,7 @@ volumes:
       <div class="link-chip">📄 docs/testcontainers.md</div>
       <div class="link-chip">📬 postman/User-CRUD.postman_collection.json</div>
       <div class="link-chip">🐳 docker-compose.yml</div>
-      <div class="link-chip">📖 localhost:8080/swagger-ui.html</div>
+      <div class="link-chip">📖 localhost:8111/swagger-ui.html</div>
     </div>
     <div style="margin-top:36px; display:flex; gap:24px; flex-wrap:wrap; justify-content:center">
       <div style="text-align:center">

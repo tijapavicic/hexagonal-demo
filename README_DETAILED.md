@@ -238,8 +238,8 @@ docker compose up --build
 
 | Service | URL |
 |---------|-----|
-| REST API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
+| REST API | http://localhost:8111 |
+| Swagger UI | http://localhost:8111/swagger-ui.html |
 | MongoDB | localhost:27017 |
 
 ### Configuration
@@ -249,7 +249,7 @@ Environment variables override `application.yml` at runtime:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MONGODB_URI` | `mongodb://localhost:27017/hexagonal_demo` | MongoDB connection string |
-| `SERVER_PORT` | `8080` | HTTP server port |
+| `SERVER_PORT` | `8111` | HTTP server port |
 
 ---
 
