@@ -1,0 +1,80 @@
+{
+  "realm": "hexagonal",
+  "displayName": "Hexagonal Demo",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Standard user role — can call /api/users/**",
+        "composite": false
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrator role",
+        "composite": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "hexagonal-app",
+      "name": "Hexagonal Demo App",
+      "description": "Client for the hexagonal-demo Spring Boot service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "hexagonal-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "86400"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "testuser@example.com",
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "USER"
+      ]
+    },
+    {
+      "username": "service-account-hexagonal-app",
+      "enabled": true,
+      "serviceAccountClientId": "hexagonal-app",
+      "realmRoles": [
+        "USER"
+      ]
+    }
+  ]
+}
+

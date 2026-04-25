@@ -5,9 +5,15 @@ spring:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/hexagonal_demo}
       auto-index-creation: true   # honour @Indexed annotations on documents
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak realm issuer — set KEYCLOAK_ISSUER_URI in production/docker
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/hexagonal}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8111}
   error:
     include-message: never        # do not expose raw exception messages in Spring's default error response
     include-stacktrace: never
@@ -21,9 +27,19 @@ management:
     health:
       show-details: never         # hide sensitive internal details from /actuator/health
 
+# JWT signing secret — must be at least 32 characters.
+# Override via APP_JWT_SECRET environment variable in production.
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:change-me-in-production-min-32-chars!!}
+  auth:
+    # Override both via environment variables — never hardcode real credentials.
+    # Generate a bcrypt hash: htpasswd -bnBC 12 "" <password> | tr -d ':\n'
+    username: ${APP_USERNAME:admin}
+    password-hash: ${APP_PASSWORD_HASH:$2a$10$z1WbtlzeOR7oT9yCcsvc5O7WNPmgEdxJDyBLhkZUbtwVUR5lAKXg2}
+
 logging:
   level:
-    com.example: DEBUG
+    com.example: INFO          # override with LOG_LEVEL env var or application-local.yml
     org.springframework.data.mongodb: WARN
-
-
+    org.springframework.security: WARN

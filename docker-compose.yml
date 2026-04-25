@@ -1,5 +1,17 @@
-version: "3.9"
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: hexagonal-demo-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    restart: unless-stopped
+
   mongodb:
     image: mongo:7
     container_name: hexagonal-demo-mongodb
@@ -18,13 +30,20 @@ services:
     container_name: hexagonal-demo-app
     depends_on:
       - mongodb
+      - keycloak
     environment:
       MONGODB_URI: mongodb://mongodb:27017/hexagonal_demo
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/hexagonal
       SERVER_PORT: 8111
+      # JWT signing secret — override with a strong secret in production (min 32 chars)
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-change-me-in-production-min-32-chars!!}
+      # Auth credentials — override via environment variables; never hardcode real values
+      APP_USERNAME: ${APP_USERNAME:-admin}
+      # Default hash is BCrypt(10) of 'admin123' — change for production
+      APP_PASSWORD_HASH: ${APP_PASSWORD_HASH:-$2a$10$z1WbtlzeOR7oT9yCcsvc5O7WNPmgEdxJDyBLhkZUbtwVUR5lAKXg2}
     ports:
       - "8111:8111"
     restart: unless-stopped
 
 volumes:
   mongo_data:
-

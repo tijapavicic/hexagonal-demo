@@ -36,6 +36,11 @@ public class UserMongoPersistenceAdapter implements UserPersistencePort {
     }
 
     @Override
+    public boolean existsById(String id) {
+        return repository.existsById(id);
+    }
+
+    @Override
     public UserPage findAll(UserQuery query) {
         Query mongoQuery = buildQuery(query);
         long total = mongoTemplate.count(mongoQuery, UserDocument.class);

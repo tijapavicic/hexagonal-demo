@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+        Structured JSON logging via logstash-logback-encoder.
+        The 'traceId' field is automatically pulled from the SLF4J MDC
+        (populated by CorrelationIdFilter) and included in every log record.
+
+        Use the 'local' Spring profile (application-local.yml) for human-readable
+        console output during development.
+    -->
+
+    <springProfile name="!local">
+        <!-- Production / CI: emit JSON to stdout for log-aggregator ingestion -->
+        <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <fieldNames>
+                    <timestamp>timestamp</timestamp>
+                    <message>message</message>
+                    <logger>logger</logger>
+                    <thread>thread</thread>
+                    <level>level</level>
+                </fieldNames>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON_STDOUT"/>
+        </root>
+
+        <logger name="com.example" level="${LOG_LEVEL:-INFO}"/>
+        <logger name="org.springframework.data.mongodb" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+    </springProfile>
+
+    <springProfile name="local">
+        <!-- Local development: human-readable coloured output -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="com.example" level="DEBUG"/>
+        <logger name="org.springframework.data.mongodb" level="WARN"/>
+    </springProfile>
+
+</configuration>
+

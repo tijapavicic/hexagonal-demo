@@ -39,15 +39,13 @@ public class UserService implements CreateUserUseCase, GetUserUseCase, ListUsers
 
     @Override
     public User update(String id, User user) {
-        // Validates existence — throws UserNotFoundException if absent.
-        // Avoids a second findById by reusing the public getById contract.
-        getById(id);
+        if (!persistencePort.existsById(id)) throw new UserNotFoundException(id);
         return persistencePort.save(new User(id, user.name(), user.address(), user.age()));
     }
 
     @Override
     public void delete(String id) {
-        getById(id); // throws UserNotFoundException if absent
+        if (!persistencePort.existsById(id)) throw new UserNotFoundException(id);
         persistencePort.deleteById(id);
     }
 }

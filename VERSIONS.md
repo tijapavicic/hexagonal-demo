@@ -5,6 +5,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventi
 
 ---
 
+## [1.7.0] — 2026-04-26
+
+> **Keycloak Integration** — dual-token authentication supporting both custom HMAC-SHA256 JWTs and Keycloak RS256 tokens via a composite `JwtDecoder`.
+
+### ✅ Added
+
+| Item | Details |
+|------|---------|
+| `keycloak/realm-export.json` | Auto-imported Keycloak realm `hexagonal` — client `hexagonal-app`, test user `testuser/testpass`, realm role `USER`, client-credentials service account |
+| `SecurityConfig#compositeJwtDecoder()` | Composite `JwtDecoder` bean: tries HMAC-SHA256 first (custom tokens), falls back to Keycloak JWKS (RS256) |
+| `SecurityConfig#keycloakAuthenticationConverter()` | Extracts `realm_access.roles` from Keycloak tokens and maps to `ROLE_*` Spring Security authorities |
+| `spring-boot-starter-oauth2-resource-server` | New dependency; provides `NimbusJwtDecoder`, `JwtAuthenticationConverter`, `BearerTokenAuthenticationFilter` |
+| Keycloak service in `docker-compose.yml` | `quay.io/keycloak/keycloak:24.0` on port `8180`, auto-imports realm, `depends_on` by `app` |
+| `KEYCLOAK_ISSUER_URI` env var | Configures the Keycloak issuer for the resource server decoder; defaults to `http://localhost:8180/realms/hexagonal` |
+| `docs/important_considerations.md` §3 | Full Keycloak integration guide: architecture diagram, token flows, curl examples for password + client-credentials grants |
+
+### 🔄 Changed
+
+| Item | Details |
+|------|---------|
+| `SecurityConfig` | Replaced `addFilterBefore(jwtAuthFilter, ...)` with `oauth2ResourceServer(jwt -> jwt.decoder(compositeJwtDecoder()))` — cleaner, standards-based |
+| `JwtAuthFilter` | Removed `@Component` — no longer auto-registered in servlet container; retained as non-active class for reference |
+| `application.yml` | Added `spring.security.oauth2.resourceserver.jwt.issuer-uri` config block |
+| `docker-compose.yml` | App service now `depends_on` both `mongodb` and `keycloak`; added `KEYCLOAK_ISSUER_URI` env var |
+
+### 🔑 Auth Flows After This Release
+
+| Flow | Endpoint | Grant | Token Format |
+|------|----------|-------|-------------|
+| Custom login | `POST /api/auth/login` | username + password | HS256 JWT |
+| Keycloak password | `POST :8180/realms/hexagonal/protocol/openid-connect/token` | `password` | RS256 JWT |
+| Keycloak M2M | `POST :8180/realms/hexagonal/protocol/openid-connect/token` | `client_credentials` | RS256 JWT |
+
+---
+
 ## [1.5.0] — 2026-04-22
 
 > **Principal Engineer Refactoring** — domain boundary correctness, bug fix, hardened error handling, and security configuration.

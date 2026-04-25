@@ -67,7 +67,7 @@ class UserServiceTest {
 
     @Test
     void updateShouldThrowWhenUserNotFound() {
-        when(persistencePort.findById("missing")).thenReturn(Optional.empty());
+        when(persistencePort.existsById("missing")).thenReturn(false);
 
         assertThrows(UserNotFoundException.class,
                 () -> userService.update("missing", new User(null, "X", "Y", 1)));
@@ -77,7 +77,7 @@ class UserServiceTest {
 
     @Test
     void deleteShouldThrowWhenUserNotFound() {
-        when(persistencePort.findById("missing")).thenReturn(Optional.empty());
+        when(persistencePort.existsById("missing")).thenReturn(false);
 
         assertThrows(UserNotFoundException.class, () -> userService.delete("missing"));
 

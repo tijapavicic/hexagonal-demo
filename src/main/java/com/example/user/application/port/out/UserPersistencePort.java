@@ -11,6 +11,8 @@ public interface UserPersistencePort {
 
     Optional<User> findById(String id);
 
+    boolean existsById(String id);
+
     UserPage findAll(UserQuery query);
 
     void deleteById(String id);

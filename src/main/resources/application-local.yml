@@ -1,0 +1,12 @@
+# Local development profile — activate with: -Dspring.profiles.active=local
+# Overrides production defaults for developer convenience.
+spring:
+  profiles:
+    active: local
+
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.data.mongodb: DEBUG
+
