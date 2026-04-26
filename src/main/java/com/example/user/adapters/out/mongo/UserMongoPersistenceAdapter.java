@@ -5,6 +5,7 @@ import com.example.user.application.query.UserQuery;
 import com.example.user.domain.model.User;
 import com.example.user.domain.model.UserPage;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Component
 public class UserMongoPersistenceAdapter implements UserPersistencePort {
@@ -45,7 +47,7 @@ public class UserMongoPersistenceAdapter implements UserPersistencePort {
         Query mongoQuery = buildQuery(query);
         long total = mongoTemplate.count(mongoQuery, UserDocument.class);
 
-        mongoQuery.with(PageRequest.of(query.page(), query.size()));
+        mongoQuery.with(PageRequest.of(query.page(), query.size(), Sort.by(Sort.Direction.ASC, "id")));
         List<User> content = mongoTemplate.find(mongoQuery, UserDocument.class)
                 .stream()
                 .map(UserMongoMapper::toDomain)
@@ -64,7 +66,7 @@ public class UserMongoPersistenceAdapter implements UserPersistencePort {
         Query mongoQuery = new Query();
 
         if (query.name() != null && !query.name().isBlank()) {
-            mongoQuery.addCriteria(Criteria.where("name").regex(query.name(), "i"));
+            mongoQuery.addCriteria(Criteria.where("name").regex(Pattern.quote(query.name()), "i"));
         }
 
         if (query.minAge() != null || query.maxAge() != null) {

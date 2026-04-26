@@ -19,10 +19,12 @@ public record UserQuery(
         if (size < 1) {
             throw new IllegalArgumentException("size must be at least 1");
         }
+        if (minAge != null && maxAge != null && minAge > maxAge) {
+            throw new IllegalArgumentException("minAge must be less than or equal to maxAge");
+        }
     }
 
     public static UserQuery of(String name, Integer minAge, Integer maxAge, int page, int size) {
         return new UserQuery(name, minAge, maxAge, page, size);
     }
 }
-

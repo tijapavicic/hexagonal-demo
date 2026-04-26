@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -31,9 +32,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
-@WithMockUser  // satisfies Spring Security for all tests in this class
+@Testcontainers(disabledWithoutDocker = true)
 class UserControllerIntegrationTest {
+
+    private static final String TEST_USERNAME = "integration-user";
+    private static final String TEST_PASSWORD = "integration-password";
+    private static final String TEST_JWT_SECRET = "integration-test-secret-32-chars!!";
 
     @Container
     static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7");
@@ -41,6 +45,10 @@ class UserControllerIntegrationTest {
     @DynamicPropertySource
     static void mongoProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
+        registry.add("app.jwt.secret", () -> TEST_JWT_SECRET);
+        registry.add("app.auth.username", () -> TEST_USERNAME);
+        registry.add("app.auth.password-hash",
+                () -> new BCryptPasswordEncoder().encode(TEST_PASSWORD));
     }
 
     @Autowired
@@ -58,6 +66,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void createAndGetUser() throws Exception {
         CreateUserRequest request = new CreateUserRequest("Alice", "Berlin", 30);
 
@@ -78,6 +87,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void updateUser() throws Exception {
         String id = createUser("Bob", "Hamburg", 25);
 
@@ -91,6 +101,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void deleteUser() throws Exception {
         String id = createUser("Charlie", "Frankfurt", 35);
 
@@ -102,6 +113,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void listUsersWithFilters() throws Exception {
         createUser("Alice", "Berlin", 30);
         createUser("Bob", "Hamburg", 25);
@@ -126,6 +138,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void listUsers_withOnlyMinAge_shouldFilterCorrectly() throws Exception {
         createUser("Young", "Berlin", 20);
         createUser("Old", "Hamburg", 60);
@@ -137,6 +150,28 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
+    void listUsers_withRegexMetaCharactersInName_shouldTreatNameAsLiteral() throws Exception {
+        createUser("literal .* pattern", "Berlin", 20);
+        createUser("ordinary-user", "Hamburg", 21);
+
+        mockMvc.perform(get("/api/users").param("name", ".*"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].name", is("literal .* pattern")));
+    }
+
+    @Test
+    @WithMockUser
+    void listUsers_withInvalidAgeRange_shouldReturn400() throws Exception {
+        mockMvc.perform(get("/api/users").param("minAge", "50").param("maxAge", "20"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title", is("Invalid Request Parameter")))
+                .andExpect(jsonPath("$.detail", is("minAge must be less than or equal to maxAge")));
+    }
+
+    @Test
+    @WithMockUser
     void validationError() throws Exception {
         String badBody = "{\"name\":\"\",\"address\":\"Berlin\",\"age\":30}";
         mockMvc.perform(post("/api/users")
@@ -148,17 +183,36 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    void login_shouldReturnBearerTokenForValidCredentials() throws Exception {
+        String loginBody = """
+                {"username":"%s","password":"%s"}
+                """.formatted(TEST_USERNAME, TEST_PASSWORD);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.type", is("Bearer")))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.expiresInSeconds", is(86400)));
+    }
+
+    @Test
+    void login_shouldRejectInvalidCredentials() throws Exception {
+        String loginBody = """
+                {"username":"%s","password":"wrong-password"}
+                """.formatted(TEST_USERNAME);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void unauthenticated_shouldReturn401() throws Exception {
-        // Override @WithMockUser for this single test — no auth context
-        mockMvc.perform(get("/api/users")
-                        .with(request -> { request.setRemoteUser(null); return request; }))
-                // Spring Security clears context; without proper JWT, anonymous access is rejected
-                // We verify the endpoint actually requires auth by calling without @WithMockUser
-                .andExpect(result ->
-                        org.junit.jupiter.api.Assertions.assertTrue(
-                                result.getResponse().getStatus() == 200 ||
-                                result.getResponse().getStatus() == 401));
-        // Real unauthenticated test via login flow is covered in AuthControllerTest
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isUnauthorized());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

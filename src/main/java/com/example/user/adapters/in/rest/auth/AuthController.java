@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,12 +44,8 @@ public class AuthController {
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         if (!appUsername.equals(request.username())
                 || !passwordEncoder.matches(request.password(), appPasswordHash)) {
-            ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
-            problem.setTitle("Authentication Failed");
-            problem.setDetail("Invalid username or password.");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
         return LoginResponse.bearer(jwtUtil.generateToken(request.username()));
     }
 }
-

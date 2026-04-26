@@ -27,16 +27,16 @@ management:
     health:
       show-details: never         # hide sensitive internal details from /actuator/health
 
-# JWT signing secret — must be at least 32 characters.
-# Override via APP_JWT_SECRET environment variable in production.
+# JWT signing secret — must be supplied by the environment in non-local profiles.
+# Use application-local.yml for developer-only defaults.
 app:
   jwt:
-    secret: ${APP_JWT_SECRET:change-me-in-production-min-32-chars!!}
+    secret: ${APP_JWT_SECRET}
   auth:
-    # Override both via environment variables — never hardcode real credentials.
+    # Supply both via environment variables in non-local profiles.
     # Generate a bcrypt hash: htpasswd -bnBC 12 "" <password> | tr -d ':\n'
-    username: ${APP_USERNAME:admin}
-    password-hash: ${APP_PASSWORD_HASH:$2a$10$z1WbtlzeOR7oT9yCcsvc5O7WNPmgEdxJDyBLhkZUbtwVUR5lAKXg2}
+    username: ${APP_USERNAME}
+    password-hash: ${APP_PASSWORD_HASH}
 
 logging:
   level:

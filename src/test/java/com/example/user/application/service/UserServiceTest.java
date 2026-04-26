@@ -16,8 +16,10 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,6 +56,16 @@ class UserServiceTest {
     }
 
     @Test
+    void getByIdShouldReturnUserWhenPresent() {
+        User expected = new User("user-1", "Alice", "Berlin", 30);
+        when(persistencePort.findById("user-1")).thenReturn(Optional.of(expected));
+
+        User result = userService.getById("user-1");
+
+        assertSame(expected, result);
+    }
+
+    @Test
     void getAllShouldDelegateToPersistenceWithQuery() {
         UserQuery query = UserQuery.of(null, null, null, 0, 20);
         UserPage page = new UserPage(List.of(), 0, 0, 0, 20);
@@ -76,12 +88,34 @@ class UserServiceTest {
     }
 
     @Test
+    void updateShouldPersistUsingPathId() {
+        User input = new User("client-supplied-id", "Alice Updated", "Munich", 31);
+        User saved = new User("server-id", "Alice Updated", "Munich", 31);
+        when(persistencePort.existsById("server-id")).thenReturn(true);
+        when(persistencePort.save(any(User.class))).thenReturn(saved);
+
+        User result = userService.update("server-id", input);
+
+        assertSame(saved, result);
+        verify(persistencePort).save(new User("server-id", "Alice Updated", "Munich", 31));
+    }
+
+    @Test
     void deleteShouldThrowWhenUserNotFound() {
         when(persistencePort.existsById("missing")).thenReturn(false);
 
         assertThrows(UserNotFoundException.class, () -> userService.delete("missing"));
 
         verify(persistencePort, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteShouldDelegateWhenUserExists() {
+        when(persistencePort.existsById("user-1")).thenReturn(true);
+
+        userService.delete("user-1");
+
+        verify(persistencePort).deleteById("user-1");
     }
 
     @Test
@@ -94,5 +128,11 @@ class UserServiceTest {
     void userQueryShouldRejectZeroSize() {
         assertThrows(IllegalArgumentException.class,
                 () -> UserQuery.of(null, null, null, 0, 0));
+    }
+
+    @Test
+    void userQueryShouldRejectMinAgeGreaterThanMaxAge() {
+        assertThrows(IllegalArgumentException.class,
+                () -> UserQuery.of(null, 40, 20, 0, 20));
     }
 }

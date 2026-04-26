@@ -1,12 +1,14 @@
 # Local development profile — activate with: -Dspring.profiles.active=local
 # Overrides production defaults for developer convenience.
-spring:
-  profiles:
-    active: local
+app:
+  jwt:
+    secret: change-me-local-dev-secret-32-chars
+  auth:
+    username: admin
+    password-hash: $2a$10$z1WbtlzeOR7oT9yCcsvc5O7WNPmgEdxJDyBLhkZUbtwVUR5lAKXg2
 
 logging:
   level:
     com.example: DEBUG
     org.springframework.security: DEBUG
     org.springframework.data.mongodb: DEBUG
-

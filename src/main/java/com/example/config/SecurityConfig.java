@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -21,6 +23,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Spring Security configuration.
@@ -74,7 +80,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .decoder(compositeJwtDecoder())
-                                .jwtAuthenticationConverter(keycloakAuthenticationConverter())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
                         )
                 )
                 .build();
@@ -120,15 +126,44 @@ public class SecurityConfig {
      * <p>For custom HMAC tokens the {@code roles} claim (flat list) is used instead.
      */
     @Bean
-    public Converter<Jwt, AbstractAuthenticationToken> keycloakAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        // Keycloak puts roles under realm_access.roles; fall back to standard "roles" claim
-        authoritiesConverter.setAuthoritiesClaimName("realm_access.roles");
-        authoritiesConverter.setAuthorityPrefix("ROLE_");
-
+    public Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        converter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter());
         return converter;
+    }
+
+    @Bean
+    public Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter() {
+        JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
+
+        return jwt -> {
+            LinkedHashSet<GrantedAuthority> authorities = new LinkedHashSet<>();
+            Collection<GrantedAuthority> scopeAuthorities = scopeConverter.convert(jwt);
+            if (scopeAuthorities != null) {
+                authorities.addAll(scopeAuthorities);
+            }
+            authorities.addAll(toAuthorities(jwt.getClaim("roles")));
+
+            Object realmAccess = jwt.getClaim("realm_access");
+            if (realmAccess instanceof Map<?, ?> realmAccessMap) {
+                authorities.addAll(toAuthorities(realmAccessMap.get("roles")));
+            }
+
+            return authorities;
+        };
+    }
+
+    private static Collection<GrantedAuthority> toAuthorities(Object claimValue) {
+        if (!(claimValue instanceof Collection<?> values)) {
+            return java.util.List.of();
+        }
+
+        return values.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Bean
