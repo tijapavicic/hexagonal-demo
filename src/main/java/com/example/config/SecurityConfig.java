@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.StringUtils;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -56,7 +57,7 @@ public class SecurityConfig {
      * Keycloak issuer URI used to build the OIDC {@link JwtDecoder}.
      * Set via {@code KEYCLOAK_ISSUER_URI} env var or {@code application.yml}.
      */
-    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
     private String keycloakIssuerUri;
 
     @Bean
@@ -101,22 +102,33 @@ public class SecurityConfig {
         SecretKeySpec secretKey = new SecretKeySpec(jwtSecret.getBytes(), "HmacSHA256");
         NimbusJwtDecoder hmacDecoder = NimbusJwtDecoder.withSecretKey(secretKey).build();
 
-        NimbusJwtDecoder keycloakDecoder = NimbusJwtDecoder
-                .withIssuerLocation(keycloakIssuerUri)
-                .build();
+        JwtDecoder keycloakDecoder = buildOptionalKeycloakDecoder();
 
         return token -> {
             try {
                 return hmacDecoder.decode(token);
             } catch (JwtException hmacEx) {
-                try {
-                    return keycloakDecoder.decode(token);
-                } catch (JwtException keycloakEx) {
-                    // Surface the Keycloak error so the 401 message is meaningful
-                    throw keycloakEx;
+                if (keycloakDecoder != null) {
+                    try {
+                        return keycloakDecoder.decode(token);
+                    } catch (JwtException keycloakEx) {
+                        // Surface the Keycloak error so the 401 message is meaningful
+                        throw keycloakEx;
+                    }
                 }
+                throw hmacEx;
             }
         };
+    }
+
+    private JwtDecoder buildOptionalKeycloakDecoder() {
+        if (!StringUtils.hasText(keycloakIssuerUri)) {
+            return null;
+        }
+
+        return NimbusJwtDecoder
+                .withIssuerLocation(keycloakIssuerUri)
+                .build();
     }
 
     /**
@@ -125,15 +137,13 @@ public class SecurityConfig {
      *
      * <p>For custom HMAC tokens the {@code roles} claim (flat list) is used instead.
      */
-    @Bean
-    public Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
+    private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter());
         return converter;
     }
 
-    @Bean
-    public Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter() {
+    private Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter() {
         JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
 
         return jwt -> {

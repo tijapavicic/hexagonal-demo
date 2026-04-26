@@ -9,8 +9,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Keycloak realm issuer — set KEYCLOAK_ISSUER_URI in production/docker
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/hexagonal}
+          # Optional Keycloak realm issuer. When unset, only locally issued HMAC JWTs are accepted.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:}
 
 server:
   port: ${SERVER_PORT:8111}

@@ -28,7 +28,7 @@ class JwtUtilTest {
     void isValidShouldReturnFalseForTamperedToken() {
         JwtUtil jwtUtil = new JwtUtil(SECRET);
         String token = jwtUtil.generateToken("alice");
-        String tamperedToken = token.substring(0, token.length() - 1) + "x";
+        String tamperedToken = token + "tampered";
 
         assertFalse(jwtUtil.isValid(tamperedToken));
     }
@@ -37,7 +37,7 @@ class JwtUtilTest {
     void extractUsernameShouldThrowForTamperedToken() {
         JwtUtil jwtUtil = new JwtUtil(SECRET);
         String token = jwtUtil.generateToken("alice");
-        String tamperedToken = token.substring(0, token.length() - 1) + "x";
+        String tamperedToken = token + "tampered";
 
         assertThrows(Exception.class, () -> jwtUtil.extractUsername(tamperedToken));
     }

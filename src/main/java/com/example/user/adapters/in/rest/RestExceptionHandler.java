@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,6 +73,14 @@ public class RestExceptionHandler {
         problem.setTitle("Validation Failed");
         problem.setDetail("One or more parameters failed validation.");
         problem.setProperty("errors", violations);
+        return problem;
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ProblemDetail handleResponseStatusException(ResponseStatusException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(ex.getStatusCode());
+        problem.setTitle(ex.getStatusCode().toString());
+        problem.setDetail(ex.getReason() != null ? ex.getReason() : "Request failed.");
         return problem;
     }
 
